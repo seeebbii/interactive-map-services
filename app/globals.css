@@ -1,0 +1,137 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*  ───────────────────────────────────────────────────────────────────────────
+    Design tokens — dark-first editorial dataviz aesthetic.
+    Token names mirror the Tailwind theme so utilities and CSS vars line up
+    when we need to escape into raw CSS (SVG, gradient meshes, etc).
+    ───────────────────────────────────────────────────────────────────────── */
+
+:root {
+  --ink: #0A0A0F;
+  --ink-panel: #0F0F16;
+  --ink-surface: #14141C;
+  --ink-card: #191925;
+  --ink-border: #27272F;
+  --ink-border-soft: rgba(255, 255, 255, 0.06);
+
+  --bone: #E5E5EC;
+  --bone-muted: #8B8B97;
+  --bone-dim: #5F5F6A;
+
+  --signal: #00E5FF;
+  --signal-hot: #22F5FF;
+  --signal-dim: #00B7CC;
+
+  --cat-food: #FF6B47;
+  --cat-ride: #FFC93D;
+  --cat-grocery: #5BD68A;
+  --cat-courier: #3DC9F0;
+  --cat-fintech: #7B7AFF;
+  --cat-streaming: #D169FF;
+  --cat-superapp: #FF5BB0;
+
+  /* Editorial easing — non-linear by default so motion feels intentional */
+  --ease-editorial: cubic-bezier(0.2, 0.7, 0.3, 1);
+  --ease-spring: cubic-bezier(0.25, 1.4, 0.4, 1);
+}
+
+html, body {
+  background: var(--ink);
+  color: var(--bone);
+  font-feature-settings: "ss01", "ss02", "cv11";
+}
+
+body {
+  /* Subtle atmospheric haze — gives depth without competing with the map */
+  background-image:
+    radial-gradient(1200px 700px at 75% -10%, rgba(0, 229, 255, 0.04), transparent 60%),
+    radial-gradient(900px 600px at 12% 105%, rgba(123, 122, 255, 0.04), transparent 55%);
+}
+
+/*  Tabular numerics for stat numbers — makes numbers stop dancing on update.
+    Applied selectively via .num utility because UI text shouldn't lock width. */
+.num {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+/*  Editorial focus ring — visible, high-contrast, hugs the element */
+*:focus {
+  outline: none;
+}
+
+*:focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/*  Scrollbars — dark, subtle */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.16);
+  background-clip: padding-box;
+  border: 2px solid transparent;
+}
+
+/*  Map-specific overrides — react-simple-maps strips most styles, but country
+    paths ship with default cursor; we want the whole map to feel pickable */
+.rsm-geographies path {
+  cursor: pointer;
+  outline: none;
+}
+
+/*  Loading shimmer — dark-mode appropriate, used for the map silhouette */
+.shimmer {
+  background: linear-gradient(
+    100deg,
+    rgba(255, 255, 255, 0.03) 0%,
+    rgba(255, 255, 255, 0.07) 50%,
+    rgba(255, 255, 255, 0.03) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2.4s linear infinite;
+}
+
+/*  prefers-reduced-motion — kill decorative animation, keep functional easing
+    Components also branch on the store value so JS-driven motion is honored. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/*  Editorial display class — a rare flourish, used for the page hero number */
+.display-hero {
+  font-feature-settings: "tnum", "ss01";
+  letter-spacing: -0.04em;
+  font-weight: 500;
+}
+
+/*  Subtle land grid backdrop for the map area — feels Bloomberg/instrument */
+.map-canvas {
+  background-image:
+    linear-gradient(var(--ink-border-soft) 1px, transparent 1px),
+    linear-gradient(90deg, var(--ink-border-soft) 1px, transparent 1px);
+  background-size: 32px 32px;
+  background-position: -1px -1px;
+}
