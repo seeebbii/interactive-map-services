@@ -49,13 +49,28 @@ import { COUNTRY_BY_ISO } from "@/lib/data/countryAppMap";
 
 type TopoData = unknown;
 
-const GLOBE_SCALE = 320;
+const BASE_GLOBE_SCALE = 320;
+const MIN_GLOBE_SCALE = 220;
+const MAX_GLOBE_SCALE = 1600;
 const DRAG_LON_DEG_PER_PX = 0.4;
 const DRAG_LAT_DEG_PER_PX = 0.32;
 const EDITORIAL_EASE: [number, number, number, number] = [0.2, 0.7, 0.3, 1];
 
 function clamp(n: number, lo: number, hi: number): number {
   return Math.max(lo, Math.min(hi, n));
+}
+
+/**
+ * Pick a target scale when a country is selected. Smaller countries deserve
+ * more zoom so they actually fill the viewport. Population is a rough proxy
+ * for area — close enough for marker-grade selection animation.
+ */
+function targetScaleForCountry(populationM: number): number {
+  if (populationM < 5) return 1100; // micro-states (Singapore, Bahrain, Uruguay…)
+  if (populationM < 20) return 850;
+  if (populationM < 60) return 700;
+  if (populationM < 200) return 560;
+  return 460; // continental giants (India, China, USA, Brazil, Russia…)
 }
 
 /** Shortest-path interpolation target for longitude (handles wrap). */
@@ -70,8 +85,11 @@ export function WorldMap() {
   const [topoData, setTopoData] = useState<TopoData | null>(null);
   const rotate = useMapStore((s) => s.rotate);
   const setRotate = useMapStore((s) => s.setRotate);
+  const globeScale = useMapStore((s) => s.globeScale);
+  const setGlobeScale = useMapStore((s) => s.setGlobeScale);
   const selectedIso = useMapStore((s) => s.selectedIso);
   const reducedMotion = useMapStore((s) => s.reducedMotion);
+  const wrapperRef = useRef<HTMLDivElement | null>(null);
   const dragRef = useRef<
     | { x: number; y: number; rot: [number, number, number]; moved: boolean }
     | null
@@ -99,40 +117,58 @@ export function WorldMap() {
     };
   }, []);
 
-  // Camera animation: when a country is selected, rotate the globe to face it.
+  // Camera animation: rotate + zoom when a country is selected; on close
+  // (selectedIso → null), restore the base zoom level.
   useEffect(() => {
     animationsRef.current.forEach((a) => a.stop());
     animationsRef.current = [];
 
-    if (!selectedIso) return;
-    const entry = COUNTRY_BY_ISO[selectedIso];
-    if (!entry) return;
-
-    const targetLon = shortestLon(rotate[0], -entry.centroid[0]);
-    const targetLat = clamp(-entry.centroid[1], -85, 85);
     const duration = reducedMotion ? 0 : 0.95;
+    const start = useMapStore.getState();
 
-    const lonCtl = fmAnimate(rotate[0], targetLon, {
-      duration,
-      ease: EDITORIAL_EASE,
-      onUpdate: (v) =>
-        setRotate([
-          v,
-          useMapStore.getState().rotate[1],
-          useMapStore.getState().rotate[2],
-        ]),
-    });
-    const latCtl = fmAnimate(rotate[1], targetLat, {
-      duration,
-      ease: EDITORIAL_EASE,
-      onUpdate: (v) =>
-        setRotate([
-          useMapStore.getState().rotate[0],
-          v,
-          useMapStore.getState().rotate[2],
-        ]),
-    });
-    animationsRef.current = [lonCtl, latCtl];
+    if (selectedIso) {
+      const entry = COUNTRY_BY_ISO[selectedIso];
+      if (!entry) return;
+      const targetLon = shortestLon(start.rotate[0], -entry.centroid[0]);
+      const targetLat = clamp(-entry.centroid[1], -85, 85);
+      const targetScale = targetScaleForCountry(entry.populationM);
+
+      const lonCtl = fmAnimate(start.rotate[0], targetLon, {
+        duration,
+        ease: EDITORIAL_EASE,
+        onUpdate: (v) =>
+          setRotate([
+            v,
+            useMapStore.getState().rotate[1],
+            useMapStore.getState().rotate[2],
+          ]),
+      });
+      const latCtl = fmAnimate(start.rotate[1], targetLat, {
+        duration,
+        ease: EDITORIAL_EASE,
+        onUpdate: (v) =>
+          setRotate([
+            useMapStore.getState().rotate[0],
+            v,
+            useMapStore.getState().rotate[2],
+          ]),
+      });
+      const scaleCtl = fmAnimate(start.globeScale, targetScale, {
+        duration,
+        ease: EDITORIAL_EASE,
+        onUpdate: (v) => setGlobeScale(v),
+      });
+      animationsRef.current = [lonCtl, latCtl, scaleCtl];
+    } else {
+      // Closed inspector → return to overview zoom (rotation stays where the
+      // user last left it).
+      const scaleCtl = fmAnimate(start.globeScale, BASE_GLOBE_SCALE, {
+        duration,
+        ease: EDITORIAL_EASE,
+        onUpdate: (v) => setGlobeScale(v),
+      });
+      animationsRef.current = [scaleCtl];
+    }
 
     return () => {
       animationsRef.current.forEach((a) => a.stop());
@@ -140,7 +176,33 @@ export function WorldMap() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedIso, reducedMotion]);
 
-  // Pointer drag → rotate
+  // Wheel-zoom — bound to the wrapper via a non-passive native listener so
+  // we can preventDefault and stop the page from scrolling.
+  useEffect(() => {
+    const el = wrapperRef.current;
+    if (!el) return;
+    const handler = (e: WheelEvent) => {
+      e.preventDefault();
+      animationsRef.current.forEach((a) => a.stop());
+      animationsRef.current = [];
+      const factor = e.deltaY < 0 ? 1.12 : 1 / 1.12;
+      const next = clamp(
+        useMapStore.getState().globeScale * factor,
+        MIN_GLOBE_SCALE,
+        MAX_GLOBE_SCALE,
+      );
+      setGlobeScale(next);
+    };
+    el.addEventListener("wheel", handler, { passive: false });
+    return () => el.removeEventListener("wheel", handler);
+  }, [setGlobeScale]);
+
+  // Pointer drag → rotate. We *don't* call setPointerCapture eagerly: doing
+  // so on every pointerdown caused clicks to be re-targeted from the country
+  // path to the wrapper, which silently broke selection. Capture is acquired
+  // only after the user clears the drag threshold (8px).
+  const DRAG_THRESHOLD_PX = 8;
+
   const onPointerDown = (e: React.PointerEvent) => {
     animationsRef.current.forEach((a) => a.stop());
     animationsRef.current = [];
@@ -150,15 +212,20 @@ export function WorldMap() {
       rot: [...rotate] as [number, number, number],
       moved: false,
     };
-    (e.currentTarget as Element).setPointerCapture?.(e.pointerId);
   };
 
   const onPointerMove = (e: React.PointerEvent) => {
     if (!dragRef.current) return;
     const dx = e.clientX - dragRef.current.x;
     const dy = e.clientY - dragRef.current.y;
-    if (!dragRef.current.moved && Math.hypot(dx, dy) > 3) {
+    if (
+      !dragRef.current.moved &&
+      Math.hypot(dx, dy) > DRAG_THRESHOLD_PX
+    ) {
       dragRef.current.moved = true;
+      // Now we're dragging — acquire pointer capture so we keep getting
+      // events if the cursor leaves the wrapper.
+      (e.currentTarget as Element).setPointerCapture?.(e.pointerId);
     }
     if (!dragRef.current.moved) return;
     const newLon = dragRef.current.rot[0] + dx * DRAG_LON_DEG_PER_PX;
@@ -172,8 +239,10 @@ export function WorldMap() {
 
   const onPointerEnd = (e: React.PointerEvent) => {
     lastDragMovedRef.current = dragRef.current?.moved ?? false;
+    if (dragRef.current?.moved) {
+      (e.currentTarget as Element).releasePointerCapture?.(e.pointerId);
+    }
     dragRef.current = null;
-    (e.currentTarget as Element).releasePointerCapture?.(e.pointerId);
   };
 
   // Capture-phase click guard — if the previous pointer interaction was a
@@ -190,6 +259,7 @@ export function WorldMap() {
 
   return (
     <div
+      ref={wrapperRef}
       className={`absolute inset-0 select-none ${isDragging ? "cursor-grabbing" : "cursor-grab"}`}
       style={{ touchAction: "none" }}
       onPointerDown={onPointerDown}
@@ -210,7 +280,7 @@ export function WorldMap() {
       >
         <ComposableMap
           projection="geoOrthographic"
-          projectionConfig={{ scale: GLOBE_SCALE, rotate }}
+          projectionConfig={{ scale: globeScale, rotate }}
           width={1000}
           height={780}
           style={{ width: "100%", height: "100%" }}
@@ -244,7 +314,12 @@ export function WorldMap() {
           </defs>
 
           {/* Globe atmosphere ring (sits behind the sphere) */}
-          <circle cx={500} cy={390} r={GLOBE_SCALE + 18} fill="url(#globe-rim)" />
+          <circle
+            cx={500}
+            cy={390}
+            r={globeScale + 18}
+            fill="url(#globe-rim)"
+          />
 
           {/* Ocean sphere */}
           <Sphere

@@ -6,6 +6,7 @@ import { CountryInspector } from "@/components/Sidebar/CountryInspector";
 import { CoordinateReadout } from "@/components/Map/CoordinateReadout";
 import { StatsCard } from "@/components/Map/StatsCard";
 import { DragHint } from "@/components/Map/DragHint";
+import { ZoomControls } from "@/components/Map/ZoomControls";
 import { ReducedMotionBridge } from "@/components/ReducedMotionBridge";
 import { COUNTRY_APP_MAP } from "@/lib/data/countryAppMap";
 import { APPS } from "@/lib/data/apps";
@@ -27,6 +28,7 @@ export default function HomePage() {
       {/* Instrument readouts overlaying the map */}
       <CoordinateReadout />
       <StatsCard />
+      <ZoomControls />
       <Legend />
       <DragHint />
 

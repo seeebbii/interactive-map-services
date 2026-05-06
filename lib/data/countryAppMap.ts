@@ -17,7 +17,15 @@ import type { CountryAppEntry } from "@/types";
  *   3. Centroids are simplified geographic centers — fine for marker
  *      placement, not for navigation.
  *
- *   4. Population is in millions, used to scale marker bubble radii.
+ *   4. Population is in millions, used to scale visual emphasis.
+ *
+ *   5. Coverage by region:
+ *      - inDrive is added wherever it has a meaningful presence (LATAM,
+ *        MENA, South & East Asia, Africa, CIS).
+ *      - Pakistan / Bangladesh / Indonesia / Korea / China / India / Russia
+ *        get the regional super-stack (food + ride + fintech + streaming).
+ *      - International streaming (Netflix / Disney+ / Prime Video) is added
+ *        to large markets where it's a meaningful consumer app.
  *
  * To extend: append a new entry below. Keep alpha-3 ISO codes consistent
  * with `lib/data/iso.ts` so the choropleth can resolve the country.
@@ -31,14 +39,17 @@ export const COUNTRY_APP_MAP: CountryAppEntry[] = [
     centroid: [-98.4, 39.5],
     populationM: 333,
     apps: [
-      { appId: "uber",      rank: 1, marketShare: 72 },
-      { appId: "doordash",  rank: 2, marketShare: 65 },
-      { appId: "instacart", rank: 3 },
-      { appId: "venmo",     rank: 4 },
-      { appId: "cashapp",   rank: 5 },
-      { appId: "netflix",   rank: 6 },
-      { appId: "lyft",      rank: 7 },
-      { appId: "grubhub",   rank: 8 },
+      { appId: "uber",        rank: 1, marketShare: 72 },
+      { appId: "doordash",    rank: 2, marketShare: 65 },
+      { appId: "ubereats",    rank: 3 },
+      { appId: "instacart",   rank: 4 },
+      { appId: "venmo",       rank: 5 },
+      { appId: "cashapp",     rank: 6 },
+      { appId: "netflix",     rank: 7 },
+      { appId: "primevideo",  rank: 8 },
+      { appId: "disneyplus",  rank: 9 },
+      { appId: "lyft",        rank: 10 },
+      { appId: "grubhub",     rank: 11 },
     ],
   },
   {
@@ -47,10 +58,12 @@ export const COUNTRY_APP_MAP: CountryAppEntry[] = [
     centroid: [-106.3, 56.1],
     populationM: 39,
     apps: [
-      { appId: "uber",      rank: 1 },
-      { appId: "doordash",  rank: 2 },
-      { appId: "instacart", rank: 3 },
-      { appId: "netflix",   rank: 4 },
+      { appId: "uber",        rank: 1 },
+      { appId: "doordash",    rank: 2 },
+      { appId: "ubereats",    rank: 3 },
+      { appId: "instacart",   rank: 4 },
+      { appId: "netflix",     rank: 5 },
+      { appId: "primevideo",  rank: 6 },
     ],
   },
   {
@@ -60,10 +73,13 @@ export const COUNTRY_APP_MAP: CountryAppEntry[] = [
     populationM: 128,
     apps: [
       { appId: "rappi",       rank: 1 },
-      { appId: "uber",        rank: 2 },
-      { appId: "didi",        rank: 3 },
-      { appId: "mercadopago", rank: 4 },
-      { appId: "netflix",     rank: 5 },
+      { appId: "ubereats",    rank: 2 },
+      { appId: "uber",        rank: 3 },
+      { appId: "didi",        rank: 4 },
+      { appId: "indrive",     rank: 5 },
+      { appId: "mercadopago", rank: 6 },
+      { appId: "netflix",     rank: 7 },
+      { appId: "disneyplus",  rank: 8 },
     ],
   },
 
@@ -77,9 +93,12 @@ export const COUNTRY_APP_MAP: CountryAppEntry[] = [
       { appId: "ifood",        rank: 1, marketShare: 80 },
       { appId: "noventaenove", rank: 2 },
       { appId: "uber",         rank: 3 },
-      { appId: "mercadopago",  rank: 4 },
-      { appId: "rappi",        rank: 5 },
-      { appId: "netflix",      rank: 6 },
+      { appId: "indrive",      rank: 4 },
+      { appId: "mercadopago",  rank: 5 },
+      { appId: "rappi",        rank: 6 },
+      { appId: "netflix",      rank: 7 },
+      { appId: "primevideo",   rank: 8 },
+      { appId: "spotify",      rank: 9 },
     ],
   },
   {
@@ -88,11 +107,13 @@ export const COUNTRY_APP_MAP: CountryAppEntry[] = [
     centroid: [-63.6, -38.4],
     populationM: 46,
     apps: [
-      { appId: "mercadopago", rank: 1 },
+      { appId: "mercadopago", rank: 1, marketShare: 55 },
       { appId: "pedidosya",   rank: 2 },
-      { appId: "rappi",       rank: 3 },
-      { appId: "uber",        rank: 4 },
-      { appId: "netflix",     rank: 5 },
+      { appId: "rappi",        rank: 3 },
+      { appId: "uber",         rank: 4 },
+      { appId: "didi",         rank: 5 },
+      { appId: "indrive",      rank: 6 },
+      { appId: "netflix",      rank: 7 },
     ],
   },
   {
@@ -101,10 +122,12 @@ export const COUNTRY_APP_MAP: CountryAppEntry[] = [
     centroid: [-74.3, 4.6],
     populationM: 51,
     apps: [
-      { appId: "rappi",       rank: 1 },
-      { appId: "uber",        rank: 2 },
-      { appId: "mercadopago", rank: 3 },
-      { appId: "didi",        rank: 4 },
+      { appId: "rappi",        rank: 1 },
+      { appId: "uber",         rank: 2 },
+      { appId: "didi",         rank: 3 },
+      { appId: "indrive",      rank: 4 },
+      { appId: "mercadopago",  rank: 5 },
+      { appId: "netflix",      rank: 6 },
     ],
   },
   {
@@ -116,7 +139,8 @@ export const COUNTRY_APP_MAP: CountryAppEntry[] = [
       { appId: "pedidosya",   rank: 1 },
       { appId: "rappi",       rank: 2 },
       { appId: "uber",        rank: 3 },
-      { appId: "mercadopago", rank: 4 },
+      { appId: "indrive",     rank: 4 },
+      { appId: "mercadopago", rank: 5 },
     ],
   },
   {
@@ -128,7 +152,8 @@ export const COUNTRY_APP_MAP: CountryAppEntry[] = [
       { appId: "rappi",     rank: 1 },
       { appId: "pedidosya", rank: 2 },
       { appId: "uber",      rank: 3 },
-      { appId: "didi",      rank: 4 },
+      { appId: "indrive",   rank: 4 },
+      { appId: "didi",      rank: 5 },
     ],
   },
   {
@@ -137,7 +162,7 @@ export const COUNTRY_APP_MAP: CountryAppEntry[] = [
     centroid: [-55.8, -32.5],
     populationM: 3,
     apps: [
-      { appId: "pedidosya", rank: 1 },
+      { appId: "pedidosya", rank: 1, marketShare: 70 },
       { appId: "rappi",     rank: 2 },
       { appId: "uber",      rank: 3 },
     ],
@@ -150,13 +175,15 @@ export const COUNTRY_APP_MAP: CountryAppEntry[] = [
     centroid: [-3.4, 55.4],
     populationM: 67,
     apps: [
-      { appId: "deliveroo", rank: 1 },
-      { appId: "justeat",   rank: 2 },
-      { appId: "uber",      rank: 3 },
-      { appId: "revolut",   rank: 4, marketShare: 38 },
-      { appId: "bolt",      rank: 5 },
-      { appId: "netflix",   rank: 6 },
-      { appId: "spotify",   rank: 7 },
+      { appId: "deliveroo",  rank: 1 },
+      { appId: "justeat",    rank: 2 },
+      { appId: "ubereats",   rank: 3 },
+      { appId: "uber",       rank: 4 },
+      { appId: "revolut",    rank: 5, marketShare: 38 },
+      { appId: "bolt",       rank: 6 },
+      { appId: "netflix",    rank: 7 },
+      { appId: "primevideo", rank: 8 },
+      { appId: "spotify",    rank: 9 },
     ],
   },
   {
@@ -165,12 +192,13 @@ export const COUNTRY_APP_MAP: CountryAppEntry[] = [
     centroid: [2.2, 46.2],
     populationM: 65,
     apps: [
-      { appId: "ubereats",  rank: 1 },
-      { appId: "deliveroo", rank: 2 },
-      { appId: "uber",      rank: 3 },
-      { appId: "bolt",      rank: 4 },
-      { appId: "netflix",   rank: 5 },
-      { appId: "spotify",   rank: 6 },
+      { appId: "ubereats",   rank: 1 },
+      { appId: "deliveroo",  rank: 2 },
+      { appId: "uber",       rank: 3 },
+      { appId: "bolt",       rank: 4 },
+      { appId: "netflix",    rank: 5 },
+      { appId: "primevideo", rank: 6 },
+      { appId: "spotify",    rank: 7 },
     ],
   },
   {
@@ -181,10 +209,11 @@ export const COUNTRY_APP_MAP: CountryAppEntry[] = [
     apps: [
       { appId: "wolt",      rank: 1 },
       { appId: "foodpanda", rank: 2 },
-      { appId: "uber",      rank: 3 },
-      { appId: "bolt",      rank: 4 },
-      { appId: "spotify",   rank: 5 },
-      { appId: "netflix",   rank: 6 },
+      { appId: "ubereats",  rank: 3 },
+      { appId: "uber",      rank: 4 },
+      { appId: "bolt",      rank: 5 },
+      { appId: "spotify",   rank: 6 },
+      { appId: "netflix",   rank: 7 },
     ],
   },
   {
@@ -193,11 +222,12 @@ export const COUNTRY_APP_MAP: CountryAppEntry[] = [
     centroid: [-3.7, 40.5],
     populationM: 47,
     apps: [
-      { appId: "glovo",     rank: 1 },
-      { appId: "justeat",   rank: 2 },
-      { appId: "uber",      rank: 3 },
-      { appId: "bolt",      rank: 4 },
-      { appId: "netflix",   rank: 5 },
+      { appId: "glovo",   rank: 1 },
+      { appId: "justeat", rank: 2 },
+      { appId: "ubereats", rank: 3 },
+      { appId: "uber",    rank: 4 },
+      { appId: "bolt",    rank: 5 },
+      { appId: "netflix", rank: 6 },
     ],
   },
   {
@@ -208,8 +238,10 @@ export const COUNTRY_APP_MAP: CountryAppEntry[] = [
     apps: [
       { appId: "glovo",   rank: 1 },
       { appId: "justeat", rank: 2 },
-      { appId: "uber",    rank: 3 },
-      { appId: "spotify", rank: 4 },
+      { appId: "ubereats", rank: 3 },
+      { appId: "uber",    rank: 4 },
+      { appId: "spotify", rank: 5 },
+      { appId: "netflix", rank: 6 },
     ],
   },
   {
@@ -230,10 +262,11 @@ export const COUNTRY_APP_MAP: CountryAppEntry[] = [
     centroid: [19.1, 51.9],
     populationM: 38,
     apps: [
-      { appId: "wolt",      rank: 1 },
-      { appId: "bolt",      rank: 2 },
-      { appId: "glovo",     rank: 3 },
-      { appId: "uber",      rank: 4 },
+      { appId: "wolt",     rank: 1 },
+      { appId: "bolt",     rank: 2 },
+      { appId: "glovo",    rank: 3 },
+      { appId: "uber",     rank: 4 },
+      { appId: "indrive",  rank: 5 },
     ],
   },
   {
@@ -266,7 +299,7 @@ export const COUNTRY_APP_MAP: CountryAppEntry[] = [
     centroid: [25.7, 61.9],
     populationM: 5,
     apps: [
-      { appId: "wolt",    rank: 1 },
+      { appId: "wolt",    rank: 1, marketShare: 80 },
       { appId: "bolt",    rank: 2 },
       { appId: "spotify", rank: 3 },
     ],
@@ -277,9 +310,9 @@ export const COUNTRY_APP_MAP: CountryAppEntry[] = [
     centroid: [9.5, 56.3],
     populationM: 6,
     apps: [
-      { appId: "wolt",      rank: 1 },
-      { appId: "justeat",   rank: 2 },
-      { appId: "bolt",      rank: 3 },
+      { appId: "wolt",    rank: 1 },
+      { appId: "justeat", rank: 2 },
+      { appId: "bolt",    rank: 3 },
     ],
   },
   {
@@ -289,9 +322,10 @@ export const COUNTRY_APP_MAP: CountryAppEntry[] = [
     populationM: 10,
     apps: [
       { appId: "glovo",   rank: 1 },
-      { appId: "uber",    rank: 2 },
-      { appId: "bolt",    rank: 3 },
-      { appId: "netflix", rank: 4 },
+      { appId: "ubereats", rank: 2 },
+      { appId: "uber",    rank: 3 },
+      { appId: "bolt",    rank: 4 },
+      { appId: "netflix", rank: 5 },
     ],
   },
   {
@@ -300,7 +334,7 @@ export const COUNTRY_APP_MAP: CountryAppEntry[] = [
     centroid: [25.0, 58.6],
     populationM: 1,
     apps: [
-      { appId: "bolt", rank: 1, marketShare: 70 },
+      { appId: "bolt", rank: 1, marketShare: 75 },
       { appId: "wolt", rank: 2 },
     ],
   },
@@ -322,9 +356,9 @@ export const COUNTRY_APP_MAP: CountryAppEntry[] = [
     centroid: [21.8, 39.1],
     populationM: 11,
     apps: [
-      { appId: "wolt",  rank: 1 },
-      { appId: "bolt",  rank: 2 },
-      { appId: "uber",  rank: 3 },
+      { appId: "wolt", rank: 1 },
+      { appId: "bolt", rank: 2 },
+      { appId: "uber", rank: 3 },
     ],
   },
   {
@@ -358,6 +392,7 @@ export const COUNTRY_APP_MAP: CountryAppEntry[] = [
       { appId: "glovo", rank: 1 },
       { appId: "bolt",  rank: 2 },
       { appId: "uber",  rank: 3 },
+      { appId: "indrive", rank: 4 },
     ],
   },
   {
@@ -366,8 +401,9 @@ export const COUNTRY_APP_MAP: CountryAppEntry[] = [
     centroid: [105.3, 61.5],
     populationM: 144,
     apps: [
-      { appId: "yango", rank: 1, marketShare: 65 },
-      { appId: "alipay", rank: 2 },
+      { appId: "yandexgo",  rank: 1, marketShare: 65 },
+      { appId: "yandexeda", rank: 2 },
+      { appId: "indrive",   rank: 3 },
     ],
   },
 
@@ -378,9 +414,12 @@ export const COUNTRY_APP_MAP: CountryAppEntry[] = [
     centroid: [35.2, 39.0],
     populationM: 85,
     apps: [
-      { appId: "yango",   rank: 1 },
-      { appId: "bolt",    rank: 2 },
-      { appId: "spotify", rank: 3 },
+      { appId: "yemeksepeti", rank: 1, marketShare: 60 },
+      { appId: "yango",       rank: 2 },
+      { appId: "bolt",        rank: 3 },
+      { appId: "indrive",     rank: 4 },
+      { appId: "netflix",     rank: 5 },
+      { appId: "spotify",     rank: 6 },
     ],
   },
   {
@@ -389,10 +428,11 @@ export const COUNTRY_APP_MAP: CountryAppEntry[] = [
     centroid: [45.1, 23.9],
     populationM: 36,
     apps: [
-      { appId: "careem",  rank: 1 },
-      { appId: "uber",    rank: 2 },
-      { appId: "talabat", rank: 3 },
-      { appId: "netflix", rank: 4 },
+      { appId: "hungerstation", rank: 1, marketShare: 35 },
+      { appId: "talabat",       rank: 2 },
+      { appId: "careem",        rank: 3 },
+      { appId: "uber",          rank: 4 },
+      { appId: "netflix",       rank: 5 },
     ],
   },
   {
@@ -403,8 +443,9 @@ export const COUNTRY_APP_MAP: CountryAppEntry[] = [
     apps: [
       { appId: "careem",    rank: 1, marketShare: 55 },
       { appId: "talabat",   rank: 2 },
-      { appId: "uber",      rank: 3 },
-      { appId: "netflix",   rank: 4 },
+      { appId: "deliveroo", rank: 3 },
+      { appId: "uber",      rank: 4 },
+      { appId: "netflix",   rank: 5 },
     ],
   },
   {
@@ -447,7 +488,9 @@ export const COUNTRY_APP_MAP: CountryAppEntry[] = [
     apps: [
       { appId: "talabat", rank: 1 },
       { appId: "careem",  rank: 2 },
-      { appId: "uber",    rank: 3 },
+      { appId: "indrive", rank: 3 },
+      { appId: "uber",    rank: 4 },
+      { appId: "netflix", rank: 5 },
     ],
   },
   {
@@ -456,9 +499,10 @@ export const COUNTRY_APP_MAP: CountryAppEntry[] = [
     centroid: [-7.1, 31.8],
     populationM: 37,
     apps: [
-      { appId: "glovo",  rank: 1 },
-      { appId: "careem", rank: 2 },
-      { appId: "yango",  rank: 3 },
+      { appId: "glovo",   rank: 1 },
+      { appId: "careem",  rank: 2 },
+      { appId: "yango",   rank: 3 },
+      { appId: "indrive", rank: 4 },
     ],
   },
 
@@ -469,13 +513,17 @@ export const COUNTRY_APP_MAP: CountryAppEntry[] = [
     centroid: [78.9, 20.6],
     populationM: 1417,
     apps: [
-      { appId: "zomato",  rank: 1, marketShare: 56 },
-      { appId: "swiggy",  rank: 2, marketShare: 44 },
-      { appId: "phonepe", rank: 3 },
-      { appId: "paytm",   rank: 4 },
-      { appId: "uber",    rank: 5 },
-      { appId: "dunzo",   rank: 6 },
-      { appId: "netflix", rank: 7 },
+      { appId: "zomato",     rank: 1, marketShare: 56 },
+      { appId: "swiggy",     rank: 2, marketShare: 44 },
+      { appId: "phonepe",    rank: 3, marketShare: 46 },
+      { appId: "paytm",      rank: 4 },
+      { appId: "ola",        rank: 5 },
+      { appId: "uber",       rank: 6 },
+      { appId: "hotstar",    rank: 7 },
+      { appId: "jiocinema",  rank: 8 },
+      { appId: "netflix",    rank: 9 },
+      { appId: "primevideo", rank: 10 },
+      { appId: "dunzo",      rank: 11 },
     ],
   },
   {
@@ -484,10 +532,14 @@ export const COUNTRY_APP_MAP: CountryAppEntry[] = [
     centroid: [69.3, 30.4],
     populationM: 235,
     apps: [
-      { appId: "foodpanda", rank: 1, marketShare: 70 },
+      { appId: "foodpanda", rank: 1, marketShare: 75 },
       { appId: "careem",    rank: 2 },
-      { appId: "bykea",     rank: 3 },
-      { appId: "uber",      rank: 4 },
+      { appId: "indrive",   rank: 3 },
+      { appId: "bykea",     rank: 4 },
+      { appId: "jazzcash",  rank: 5, marketShare: 50 },
+      { appId: "easypaisa", rank: 6, marketShare: 45 },
+      { appId: "yango",     rank: 7 },
+      { appId: "netflix",   rank: 8 },
     ],
   },
   {
@@ -498,7 +550,9 @@ export const COUNTRY_APP_MAP: CountryAppEntry[] = [
     apps: [
       { appId: "foodpanda", rank: 1 },
       { appId: "pathao",    rank: 2 },
-      { appId: "uber",      rank: 3 },
+      { appId: "bkash",     rank: 3, marketShare: 65 },
+      { appId: "uber",      rank: 4 },
+      { appId: "indrive",   rank: 5 },
     ],
   },
   {
@@ -509,6 +563,7 @@ export const COUNTRY_APP_MAP: CountryAppEntry[] = [
     apps: [
       { appId: "uber",      rank: 1 },
       { appId: "foodpanda", rank: 2 },
+      { appId: "indrive",   rank: 3 },
     ],
   },
 
@@ -519,9 +574,11 @@ export const COUNTRY_APP_MAP: CountryAppEntry[] = [
     centroid: [104.2, 35.9],
     populationM: 1412,
     apps: [
-      { appId: "meituan", rank: 1, marketShare: 67 },
-      { appId: "didi",    rank: 2 },
-      { appId: "alipay",  rank: 3 },
+      { appId: "meituan",   rank: 1, marketShare: 67 },
+      { appId: "elema",     rank: 2, marketShare: 30 },
+      { appId: "didi",      rank: 3 },
+      { appId: "alipay",    rank: 4, marketShare: 55 },
+      { appId: "wechatpay", rank: 5, marketShare: 40 },
     ],
   },
   {
@@ -530,11 +587,11 @@ export const COUNTRY_APP_MAP: CountryAppEntry[] = [
     centroid: [138.3, 36.2],
     populationM: 124,
     apps: [
-      { appId: "ubereats", rank: 1 },
-      { appId: "lineman",  rank: 2 },
-      { appId: "uber",     rank: 3 },
-      { appId: "netflix",  rank: 4 },
-      { appId: "spotify",  rank: 5 },
+      { appId: "ubereats",  rank: 1 },
+      { appId: "lineman",   rank: 2 },
+      { appId: "uber",      rank: 3 },
+      { appId: "netflix",   rank: 4 },
+      { appId: "spotify",   rank: 5 },
     ],
   },
   {
@@ -545,8 +602,11 @@ export const COUNTRY_APP_MAP: CountryAppEntry[] = [
     apps: [
       { appId: "baemin",      rank: 1, marketShare: 60 },
       { appId: "coupangeats", rank: 2 },
-      { appId: "kakaot",      rank: 3 },
-      { appId: "netflix",     rank: 4 },
+      { appId: "yogiyo",      rank: 3 },
+      { appId: "kakaot",      rank: 4 },
+      { appId: "toss",        rank: 5 },
+      { appId: "netflix",     rank: 6 },
+      { appId: "disneyplus",  rank: 7 },
     ],
   },
 
@@ -560,7 +620,9 @@ export const COUNTRY_APP_MAP: CountryAppEntry[] = [
       { appId: "grab",       rank: 1, marketShare: 60 },
       { appId: "shopeefood", rank: 2 },
       { appId: "foodpanda",  rank: 3 },
-      { appId: "netflix",    rank: 4 },
+      { appId: "deliveroo",  rank: 4 },
+      { appId: "netflix",    rank: 5 },
+      { appId: "disneyplus", rank: 6 },
     ],
   },
   {
@@ -569,10 +631,13 @@ export const COUNTRY_APP_MAP: CountryAppEntry[] = [
     centroid: [113.9, -0.8],
     populationM: 275,
     apps: [
-      { appId: "gojek",     rank: 1 },
-      { appId: "grab",      rank: 2 },
+      { appId: "gojek",      rank: 1, marketShare: 50 },
+      { appId: "grab",       rank: 2, marketShare: 45 },
       { appId: "shopeefood", rank: 3 },
-      { appId: "netflix",   rank: 4 },
+      { appId: "gopay",      rank: 4 },
+      { appId: "ovo",        rank: 5 },
+      { appId: "netflix",    rank: 6 },
+      { appId: "disneyplus", rank: 7 },
     ],
   },
   {
@@ -583,7 +648,8 @@ export const COUNTRY_APP_MAP: CountryAppEntry[] = [
     apps: [
       { appId: "grab",      rank: 1, marketShare: 70 },
       { appId: "foodpanda", rank: 2 },
-      { appId: "netflix",   rank: 3 },
+      { appId: "indrive",   rank: 3 },
+      { appId: "netflix",   rank: 4 },
     ],
   },
   {
@@ -604,10 +670,11 @@ export const COUNTRY_APP_MAP: CountryAppEntry[] = [
     centroid: [100.9, 15.9],
     populationM: 71,
     apps: [
-      { appId: "lineman", rank: 1 },
-      { appId: "grab",    rank: 2 },
-      { appId: "foodpanda", rank: 3 },
+      { appId: "lineman",    rank: 1 },
+      { appId: "grab",       rank: 2 },
+      { appId: "foodpanda",  rank: 3 },
       { appId: "shopeefood", rank: 4 },
+      { appId: "indrive",    rank: 5 },
     ],
   },
   {
@@ -619,6 +686,7 @@ export const COUNTRY_APP_MAP: CountryAppEntry[] = [
       { appId: "grab",       rank: 1, marketShare: 65 },
       { appId: "foodpanda",  rank: 2 },
       { appId: "shopeefood", rank: 3 },
+      { appId: "indrive",    rank: 4 },
     ],
   },
 
@@ -631,8 +699,10 @@ export const COUNTRY_APP_MAP: CountryAppEntry[] = [
     apps: [
       { appId: "chowdeck", rank: 1 },
       { appId: "jumia",    rank: 2 },
-      { appId: "bolt",     rank: 3 },
-      { appId: "uber",     rank: 4 },
+      { appId: "opay",     rank: 3, marketShare: 35 },
+      { appId: "bolt",     rank: 4 },
+      { appId: "indrive",  rank: 5 },
+      { appId: "uber",     rank: 6 },
     ],
   },
   {
@@ -644,8 +714,9 @@ export const COUNTRY_APP_MAP: CountryAppEntry[] = [
       { appId: "mpesa",   rank: 1, marketShare: 96 },
       { appId: "bolt",    rank: 2 },
       { appId: "uber",    rank: 3 },
-      { appId: "jumia",   rank: 4 },
-      { appId: "glovo",   rank: 5 },
+      { appId: "indrive", rank: 4 },
+      { appId: "jumia",   rank: 5 },
+      { appId: "glovo",   rank: 6 },
     ],
   },
   {
@@ -656,7 +727,8 @@ export const COUNTRY_APP_MAP: CountryAppEntry[] = [
     apps: [
       { appId: "uber",    rank: 1 },
       { appId: "bolt",    rank: 2 },
-      { appId: "netflix", rank: 3 },
+      { appId: "indrive", rank: 3 },
+      { appId: "netflix", rank: 4 },
     ],
   },
   {
@@ -665,9 +737,10 @@ export const COUNTRY_APP_MAP: CountryAppEntry[] = [
     centroid: [-1.0, 7.9],
     populationM: 33,
     apps: [
-      { appId: "bolt", rank: 1 },
-      { appId: "uber", rank: 2 },
-      { appId: "jumia", rank: 3 },
+      { appId: "bolt",    rank: 1 },
+      { appId: "uber",    rank: 2 },
+      { appId: "indrive", rank: 3 },
+      { appId: "jumia",   rank: 4 },
     ],
   },
   {
@@ -676,8 +749,9 @@ export const COUNTRY_APP_MAP: CountryAppEntry[] = [
     centroid: [40.5, 9.1],
     populationM: 123,
     apps: [
-      { appId: "jumia", rank: 1 },
-      { appId: "bolt",  rank: 2 },
+      { appId: "jumia",   rank: 1 },
+      { appId: "bolt",    rank: 2 },
+      { appId: "indrive", rank: 3 },
     ],
   },
   {
@@ -686,9 +760,10 @@ export const COUNTRY_APP_MAP: CountryAppEntry[] = [
     centroid: [32.3, 1.4],
     populationM: 47,
     apps: [
-      { appId: "bolt",  rank: 1 },
-      { appId: "jumia", rank: 2 },
-      { appId: "mpesa", rank: 3 },
+      { appId: "bolt",    rank: 1 },
+      { appId: "jumia",   rank: 2 },
+      { appId: "mpesa",   rank: 3 },
+      { appId: "indrive", rank: 4 },
     ],
   },
   {
@@ -697,9 +772,10 @@ export const COUNTRY_APP_MAP: CountryAppEntry[] = [
     centroid: [34.9, -6.4],
     populationM: 63,
     apps: [
-      { appId: "bolt",  rank: 1 },
-      { appId: "mpesa", rank: 2 },
-      { appId: "yango", rank: 3 },
+      { appId: "bolt",    rank: 1 },
+      { appId: "mpesa",   rank: 2 },
+      { appId: "yango",   rank: 3 },
+      { appId: "indrive", rank: 4 },
     ],
   },
 
@@ -710,11 +786,13 @@ export const COUNTRY_APP_MAP: CountryAppEntry[] = [
     centroid: [133.8, -25.3],
     populationM: 26,
     apps: [
-      { appId: "menulog",   rank: 1 },
-      { appId: "doordash",  rank: 2 },
-      { appId: "uber",      rank: 3 },
-      { appId: "deliveroo", rank: 4 },
-      { appId: "netflix",   rank: 5 },
+      { appId: "menulog",    rank: 1 },
+      { appId: "doordash",   rank: 2 },
+      { appId: "ubereats",   rank: 3 },
+      { appId: "uber",       rank: 4 },
+      { appId: "deliveroo",  rank: 5 },
+      { appId: "netflix",    rank: 6 },
+      { appId: "primevideo", rank: 7 },
     ],
   },
   {

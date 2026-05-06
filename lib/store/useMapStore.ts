@@ -31,6 +31,8 @@ export interface MapStore {
   query: string;
   vizMode: VizMode;
   rotate: [number, number, number];
+  /** d3-geo projection scale — radius of the rendered sphere in viewport px. */
+  globeScale: number;
   reducedMotion: boolean;
 
   setSelectedIso: (iso: string | null) => void;
@@ -39,6 +41,7 @@ export interface MapStore {
   setQuery: (q: string) => void;
   setVizMode: (mode: VizMode) => void;
   setRotate: (rotate: [number, number, number]) => void;
+  setGlobeScale: (s: number) => void;
   setReducedMotion: (rm: boolean) => void;
 }
 
@@ -49,6 +52,7 @@ export const useMapStore = create<MapStore>((set) => ({
   query: "",
   vizMode: "fills",
   rotate: [-15, -10, 0],
+  globeScale: 320,
   reducedMotion: false,
 
   setSelectedIso: (iso) => set({ selectedIso: iso }),
@@ -57,5 +61,6 @@ export const useMapStore = create<MapStore>((set) => ({
   setQuery: (q) => set({ query: q }),
   setVizMode: (mode) => set({ vizMode: mode }),
   setRotate: (rotate) => set({ rotate }),
+  setGlobeScale: (s) => set({ globeScale: s }),
   setReducedMotion: (rm) => set({ reducedMotion: rm }),
 }));

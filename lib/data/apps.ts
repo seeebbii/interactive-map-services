@@ -73,6 +73,50 @@ export const APPS: App[] = [
 
   // ── Oceania ──────────────────────────────────────────────────────────────
   { id: "menulog",     name: "Menulog",      category: "food",      logo: "/logos/menulog.svg",     color: "#FF8000", hqCountry: "AUS", mark: "Ml" },
+
+  // ── Global ride aggregator (added per regional research) ─────────────────
+  { id: "indrive",     name: "inDrive",      category: "ride",      logo: "/logos/indrive.svg",     color: "#C1F11D", hqCountry: "USA", mark: "iD" },
+
+  // ── Pakistan (additional fintech rails) ──────────────────────────────────
+  { id: "jazzcash",    name: "JazzCash",     category: "fintech",   logo: "/logos/jazzcash.svg",    color: "#E5202E", hqCountry: "PAK", mark: "JC" },
+  { id: "easypaisa",   name: "Easypaisa",    category: "fintech",   logo: "/logos/easypaisa.svg",   color: "#15B473", hqCountry: "PAK", mark: "Ep" },
+
+  // ── India (additional ride / streaming) ──────────────────────────────────
+  { id: "ola",         name: "Ola",          category: "ride",      logo: "/logos/ola.svg",         color: "#B6DC03", hqCountry: "IND", mark: "Ol" },
+  { id: "hotstar",     name: "Hotstar",      category: "streaming", logo: "/logos/hotstar.svg",     color: "#0F1B2C", hqCountry: "IND", mark: "Hs" },
+  { id: "jiocinema",   name: "JioCinema",    category: "streaming", logo: "/logos/jiocinema.svg",   color: "#0048FF", hqCountry: "IND", mark: "Jc" },
+
+  // ── China (additional food / fintech) ───────────────────────────────────
+  { id: "elema",       name: "Ele.me",       category: "food",      logo: "/logos/elema.svg",       color: "#0085FF", hqCountry: "CHN", mark: "El" },
+  { id: "wechatpay",   name: "WeChat Pay",   category: "fintech",   logo: "/logos/wechatpay.svg",   color: "#7BB32E", hqCountry: "CHN", mark: "WP" },
+
+  // ── Russia / CIS (additional food / ride) ────────────────────────────────
+  { id: "yandexgo",    name: "Yandex Go",    category: "ride",      logo: "/logos/yandexgo.svg",    color: "#FFCC00", hqCountry: "RUS", mark: "YG" },
+  { id: "yandexeda",   name: "Yandex Eda",   category: "food",      logo: "/logos/yandexeda.svg",   color: "#FC3F1D", hqCountry: "RUS", mark: "Ye" },
+
+  // ── Korea (additional food / fintech) ────────────────────────────────────
+  { id: "yogiyo",      name: "Yogiyo",       category: "food",      logo: "/logos/yogiyo.svg",      color: "#FA0050", hqCountry: "KOR", mark: "Yo" },
+  { id: "toss",        name: "Toss",         category: "fintech",   logo: "/logos/toss.svg",        color: "#0064FF", hqCountry: "KOR", mark: "Ts" },
+
+  // ── Indonesia (additional fintech) ───────────────────────────────────────
+  { id: "gopay",       name: "GoPay",        category: "fintech",   logo: "/logos/gopay.svg",       color: "#0096DC", hqCountry: "IDN", mark: "GP" },
+  { id: "ovo",         name: "OVO",          category: "fintech",   logo: "/logos/ovo.svg",         color: "#4C2A86", hqCountry: "IDN", mark: "Ov" },
+
+  // ── Bangladesh (mobile money) ────────────────────────────────────────────
+  { id: "bkash",       name: "bKash",        category: "fintech",   logo: "/logos/bkash.svg",       color: "#E2136E", hqCountry: "BGD", mark: "bK" },
+
+  // ── Saudi Arabia (food) ──────────────────────────────────────────────────
+  { id: "hungerstation", name: "HungerStation", category: "food",   logo: "/logos/hungerstation.svg", color: "#FFAA00", hqCountry: "SAU", mark: "Hu" },
+
+  // ── Türkiye (food) ───────────────────────────────────────────────────────
+  { id: "yemeksepeti", name: "Yemeksepeti",  category: "food",      logo: "/logos/yemeksepeti.svg", color: "#FA0050", hqCountry: "TUR", mark: "Ym" },
+
+  // ── Nigeria (fintech) ────────────────────────────────────────────────────
+  { id: "opay",        name: "OPay",         category: "fintech",   logo: "/logos/opay.svg",        color: "#0F8E32", hqCountry: "NGA", mark: "Op" },
+
+  // ── International streaming (curated) ────────────────────────────────────
+  { id: "disneyplus",  name: "Disney+",      category: "streaming", logo: "/logos/disneyplus.svg",  color: "#0E2E6E", hqCountry: "USA", mark: "D+" },
+  { id: "primevideo",  name: "Prime Video",  category: "streaming", logo: "/logos/primevideo.svg",  color: "#00A8E1", hqCountry: "USA", mark: "PV" },
 ];
 
 export const APP_BY_ID: Record<string, App> = Object.fromEntries(
