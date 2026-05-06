@@ -4,26 +4,41 @@ import { create } from "zustand";
 import type { CategoryFilter } from "@/types";
 
 /**
+ * VizMode controls overlay rendering on the globe:
+ *  - "fills": choropleth only (default; clean, editorial)
+ *  - "labels": choropleth + tiny ISO code labels at country centroids
+ *  - "hybrid": choropleth + labels + selected country emphasis
+ *
+ * Per user feedback the always-on circle bubbles are gone; labels are an
+ * opt-in overlay that show country codes (instead of crowded glyph bubbles).
+ */
+export type VizMode = "fills" | "labels" | "hybrid";
+
+/**
  * Global UI state for the map view.
  *
- * - `selectedIso`: the country whose inspector is open (null = closed)
- * - `hoveredIso`: tooltip target (null = no tooltip)
+ * - `selectedIso` / `hoveredIso`: ISO alpha-3 of the country in focus
  * - `categoryFilter`: which category lens is active (null = show all)
  * - `query`: search input from the header
- * - `reducedMotion`: hydrated from `prefers-reduced-motion` so animations
- *    can branch in a single store-driven place rather than per component
+ * - `vizMode`: overlay rendering mode (see VizMode)
+ * - `rotate`: orthographic globe rotation [lambda, phi, gamma] in degrees
+ * - `reducedMotion`: hydrated from `prefers-reduced-motion`
  */
 export interface MapStore {
   selectedIso: string | null;
   hoveredIso: string | null;
   categoryFilter: CategoryFilter;
   query: string;
+  vizMode: VizMode;
+  rotate: [number, number, number];
   reducedMotion: boolean;
 
   setSelectedIso: (iso: string | null) => void;
   setHoveredIso: (iso: string | null) => void;
   setCategoryFilter: (cat: CategoryFilter) => void;
   setQuery: (q: string) => void;
+  setVizMode: (mode: VizMode) => void;
+  setRotate: (rotate: [number, number, number]) => void;
   setReducedMotion: (rm: boolean) => void;
 }
 
@@ -32,11 +47,15 @@ export const useMapStore = create<MapStore>((set) => ({
   hoveredIso: null,
   categoryFilter: null,
   query: "",
+  vizMode: "fills",
+  rotate: [-15, -10, 0],
   reducedMotion: false,
 
   setSelectedIso: (iso) => set({ selectedIso: iso }),
   setHoveredIso: (iso) => set({ hoveredIso: iso }),
   setCategoryFilter: (cat) => set({ categoryFilter: cat }),
   setQuery: (q) => set({ query: q }),
+  setVizMode: (mode) => set({ vizMode: mode }),
+  setRotate: (rotate) => set({ rotate }),
   setReducedMotion: (rm) => set({ reducedMotion: rm }),
 }));

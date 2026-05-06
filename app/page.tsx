@@ -3,49 +3,43 @@ import { CategoryPills } from "@/components/Filters/CategoryPills";
 import { Legend } from "@/components/Legend";
 import { WorldMap } from "@/components/Map/WorldMap";
 import { CountryInspector } from "@/components/Sidebar/CountryInspector";
+import { CoordinateReadout } from "@/components/Map/CoordinateReadout";
+import { StatsCard } from "@/components/Map/StatsCard";
+import { DragHint } from "@/components/Map/DragHint";
 import { ReducedMotionBridge } from "@/components/ReducedMotionBridge";
 import { COUNTRY_APP_MAP } from "@/lib/data/countryAppMap";
 import { APPS } from "@/lib/data/apps";
-import { CATEGORIES } from "@/lib/data/categories";
 
 export default function HomePage() {
-  const stats = {
-    countries: COUNTRY_APP_MAP.length,
-    apps: APPS.length,
-    categories: CATEGORIES.length,
-  };
-
   return (
     <main className="relative h-dvh w-screen overflow-hidden bg-ink text-bone">
       <ReducedMotionBridge />
 
       {/* Top chrome */}
-      <Header stats={stats} />
-
-      {/* Filter bar */}
+      <Header totalCountries={COUNTRY_APP_MAP.length} totalApps={APPS.length} />
       <CategoryPills />
 
-      {/* Map + sidebar layer */}
-      <section
-        className="absolute inset-0 z-0"
-        aria-label="World map"
-      >
+      {/* The globe */}
+      <section className="absolute inset-0 z-0" aria-label="World map">
         <WorldMap />
       </section>
 
-      {/* Sidebar overlays the map */}
+      {/* Instrument readouts overlaying the map */}
+      <CoordinateReadout />
+      <StatsCard />
+      <Legend />
+      <DragHint />
+
+      {/* Inspector slides in from the right when a country is selected */}
       <CountryInspector />
 
-      {/* Legend pinned bottom-left */}
-      <Legend />
-
-      {/* Editorial atmospheric vignette so the map fades into the chrome */}
+      {/* Editorial vignette so the globe focuses optical attention */}
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 z-10"
         style={{
           background:
-            "radial-gradient(ellipse at center, transparent 50%, rgba(10,10,15,0.65) 100%)",
+            "radial-gradient(ellipse 80% 70% at center, transparent 50%, rgba(4,4,10,0.7) 100%)",
         }}
       />
     </main>

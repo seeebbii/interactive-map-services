@@ -1,63 +1,85 @@
 "use client";
 
 /*
- * WorldMap — react-simple-maps + Framer Motion
- * ────────────────────────────────────────────
+ * WorldMap — orthographic globe (react-simple-maps + d3-geo + Framer Motion)
+ * ────────────────────────────────────────────────────────────────────────
  *
  * MAP TECHNOLOGY TRADEOFF
  *
- * We ship react-simple-maps (which wraps d3-geo and renders SVG) over
- * MapLibre GL JS for one decisive reason: every country shape is a real
- * SVG path, so Framer Motion can drive entrance animations, fill
- * interpolation on filter swap, hover lifts, and the click-to-zoom camera
- * declaratively. With WebGL (MapLibre) we'd be locked out of `motion.path`
- * and would have to imitate motion via shader uniforms or CSS layers, both
- * of which fight the renderer instead of cooperating with it.
+ * react-simple-maps wraps d3-geo and renders countries as real SVG paths,
+ * so Framer Motion can drive entrance, fill interpolation on filter swap,
+ * hover lifts, and the click-to-rotate camera declaratively. WebGL
+ * (MapLibre) would force motion through shader uniforms or CSS layers,
+ * both of which fight the renderer instead of cooperating with it.
  *
- * The cost we accept: react-simple-maps cannot draw 100k vector tiles at
- * 60fps. For a 70-feature country choropleth at 110m resolution, that's
- * fine — frames stay smooth and the editorial detail (1px strokes, layered
- * markers, soft pulses) is what makes the visualization feel premium.
+ * Cost: react-simple-maps cannot draw 100k vector tiles at 60fps. For a
+ * country-level choropleth at 110m resolution (~70 features), it stays
+ * smooth. If this ever grows into city-level density (50k pinned places),
+ * swap to MapLibre + deck.gl and accept that fills become buffer-driven
+ * rather than motion-driven.
  *
- * If this project ever grows into city-level data (think: 50k restaurants
- * pinned), swap to MapLibre GL with deck.gl overlays and accept that
- * country fills become buffer-driven instead of motion-driven.
+ * PROJECTION — WHY ORTHOGRAPHIC GLOBE
  *
- * PROJECTION
+ * The design brief wants a draggable globe (Bloomberg / Pudding lineage),
+ * not a flat atlas. Orthographic projection draws a sphere, makes the
+ * map feel like a physical instrument, and gives weight to interaction.
  *
- * Equal Earth — modern, area-accurate, less Eurocentric than Mercator,
- * cleaner aspect for editorial dataviz than Robinson. Centered slightly
- * above the equator so populated continents anchor the optical center.
+ *   • drag → rotate (lambda + phi)
+ *   • click country → animate rotation to face it
+ *   • back-of-globe countries are auto-clipped by d3-geo's clipAngle(90°)
+ *
+ * Bubble markers are intentionally absent — the map IS the data via
+ * choropleth fills. Country-code labels are an opt-in overlay (vizMode).
  */
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { ComposableMap, Geographies, ZoomableGroup } from "react-simple-maps";
+import { useEffect, useRef, useState } from "react";
+import {
+  ComposableMap,
+  Geographies,
+  Sphere,
+  Graticule,
+} from "react-simple-maps";
 import { animate as fmAnimate } from "framer-motion";
 import { CountryShape } from "@/components/Map/CountryShape";
-import { AppMarkers } from "@/components/Map/AppMarkers";
+import { CountryLabels } from "@/components/Map/CountryLabels";
 import { MapTooltip } from "@/components/Map/MapTooltip";
+import { MapShimmer } from "@/components/Map/MapShimmer";
 import { useMapStore } from "@/lib/store/useMapStore";
 import { COUNTRY_BY_ISO } from "@/lib/data/countryAppMap";
 
 type TopoData = unknown;
 
-const PROJECTION_CONFIG = {
-  scale: 175,
-  center: [0, 14] as [number, number],
-};
-
+const GLOBE_SCALE = 320;
+const DRAG_LON_DEG_PER_PX = 0.4;
+const DRAG_LAT_DEG_PER_PX = 0.32;
 const EDITORIAL_EASE: [number, number, number, number] = [0.2, 0.7, 0.3, 1];
+
+function clamp(n: number, lo: number, hi: number): number {
+  return Math.max(lo, Math.min(hi, n));
+}
+
+/** Shortest-path interpolation target for longitude (handles wrap). */
+function shortestLon(from: number, to: number): number {
+  let delta = to - from;
+  while (delta > 180) delta -= 360;
+  while (delta < -180) delta += 360;
+  return from + delta;
+}
 
 export function WorldMap() {
   const [topoData, setTopoData] = useState<TopoData | null>(null);
-  const [zoom, setZoom] = useState(1);
-  const [center, setCenter] = useState<[number, number]>([0, 14]);
+  const rotate = useMapStore((s) => s.rotate);
+  const setRotate = useMapStore((s) => s.setRotate);
   const selectedIso = useMapStore((s) => s.selectedIso);
   const reducedMotion = useMapStore((s) => s.reducedMotion);
-  const animationsRef = useRef<Array<{ stop: () => void }>>([]);
+  const dragRef = useRef<
+    | { x: number; y: number; rot: [number, number, number]; moved: boolean }
+    | null
+  >(null);
+  const lastDragMovedRef = useRef<boolean>(false);
+  const animationsRef = useRef<{ stop: () => void }[]>([]);
 
-  // Prefetch the world-atlas topojson once. Postinstall script copies the
-  // file into /public/data so the path is stable and offline-friendly.
+  // Prefetch the world-atlas TopoJSON
   useEffect(() => {
     let cancelled = false;
     fetch("/data/world-110m.json")
@@ -77,38 +99,40 @@ export function WorldMap() {
     };
   }, []);
 
-  // Camera animation: when a country is selected, smoothly push the
-  // ZoomableGroup toward its centroid; on deselect, return to overview.
+  // Camera animation: when a country is selected, rotate the globe to face it.
   useEffect(() => {
     animationsRef.current.forEach((a) => a.stop());
     animationsRef.current = [];
 
-    const target = selectedIso
-      ? (() => {
-          const entry = COUNTRY_BY_ISO[selectedIso];
-          if (!entry) return { zoom: 1, center: [0, 14] as [number, number] };
-          return { zoom: 2.6, center: entry.centroid };
-        })()
-      : { zoom: 1, center: [0, 14] as [number, number] };
+    if (!selectedIso) return;
+    const entry = COUNTRY_BY_ISO[selectedIso];
+    if (!entry) return;
 
-    const duration = reducedMotion ? 0 : 0.85;
+    const targetLon = shortestLon(rotate[0], -entry.centroid[0]);
+    const targetLat = clamp(-entry.centroid[1], -85, 85);
+    const duration = reducedMotion ? 0 : 0.95;
 
-    const zoomCtl = fmAnimate(zoom, target.zoom, {
+    const lonCtl = fmAnimate(rotate[0], targetLon, {
       duration,
       ease: EDITORIAL_EASE,
-      onUpdate: (v) => setZoom(v),
+      onUpdate: (v) =>
+        setRotate([
+          v,
+          useMapStore.getState().rotate[1],
+          useMapStore.getState().rotate[2],
+        ]),
     });
-    const cxCtl = fmAnimate(center[0], target.center[0], {
+    const latCtl = fmAnimate(rotate[1], targetLat, {
       duration,
       ease: EDITORIAL_EASE,
-      onUpdate: (v) => setCenter((c) => [v, c[1]]),
+      onUpdate: (v) =>
+        setRotate([
+          useMapStore.getState().rotate[0],
+          v,
+          useMapStore.getState().rotate[2],
+        ]),
     });
-    const cyCtl = fmAnimate(center[1], target.center[1], {
-      duration,
-      ease: EDITORIAL_EASE,
-      onUpdate: (v) => setCenter((c) => [c[0], v]),
-    });
-    animationsRef.current = [zoomCtl, cxCtl, cyCtl];
+    animationsRef.current = [lonCtl, latCtl];
 
     return () => {
       animationsRef.current.forEach((a) => a.stop());
@@ -116,10 +140,66 @@ export function WorldMap() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedIso, reducedMotion]);
 
+  // Pointer drag → rotate
+  const onPointerDown = (e: React.PointerEvent) => {
+    animationsRef.current.forEach((a) => a.stop());
+    animationsRef.current = [];
+    dragRef.current = {
+      x: e.clientX,
+      y: e.clientY,
+      rot: [...rotate] as [number, number, number],
+      moved: false,
+    };
+    (e.currentTarget as Element).setPointerCapture?.(e.pointerId);
+  };
+
+  const onPointerMove = (e: React.PointerEvent) => {
+    if (!dragRef.current) return;
+    const dx = e.clientX - dragRef.current.x;
+    const dy = e.clientY - dragRef.current.y;
+    if (!dragRef.current.moved && Math.hypot(dx, dy) > 3) {
+      dragRef.current.moved = true;
+    }
+    if (!dragRef.current.moved) return;
+    const newLon = dragRef.current.rot[0] + dx * DRAG_LON_DEG_PER_PX;
+    const newLat = clamp(
+      dragRef.current.rot[1] - dy * DRAG_LAT_DEG_PER_PX,
+      -85,
+      85,
+    );
+    setRotate([newLon, newLat, dragRef.current.rot[2]]);
+  };
+
+  const onPointerEnd = (e: React.PointerEvent) => {
+    lastDragMovedRef.current = dragRef.current?.moved ?? false;
+    dragRef.current = null;
+    (e.currentTarget as Element).releasePointerCapture?.(e.pointerId);
+  };
+
+  // Capture-phase click guard — if the previous pointer interaction was a
+  // real drag (>3px), swallow the synthesized click so countries/labels
+  // don't accidentally select.
+  const onClickCapture = (e: React.MouseEvent) => {
+    if (lastDragMovedRef.current) {
+      e.stopPropagation();
+      lastDragMovedRef.current = false;
+    }
+  };
+
+  const isDragging = dragRef.current !== null;
+
   return (
-    <div className="absolute inset-0 map-canvas">
-      {/* Loading silhouette (custom shimmer; no spinner) */}
-      {!topoData && <MapShimmer />}
+    <div
+      className={`absolute inset-0 select-none ${isDragging ? "cursor-grabbing" : "cursor-grab"}`}
+      style={{ touchAction: "none" }}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerEnd}
+      onPointerCancel={onPointerEnd}
+      onPointerLeave={onPointerEnd}
+      onClickCapture={onClickCapture}
+    >
+      {!topoData ? <MapShimmer /> : null}
 
       <div
         className="absolute inset-0"
@@ -129,119 +209,80 @@ export function WorldMap() {
         }}
       >
         <ComposableMap
-          projection="geoEqualEarth"
-          projectionConfig={PROJECTION_CONFIG}
-          width={1600}
+          projection="geoOrthographic"
+          projectionConfig={{ scale: GLOBE_SCALE, rotate }}
+          width={1000}
           height={780}
           style={{ width: "100%", height: "100%" }}
         >
           <defs>
-            {/* Soft inner glow used on selected countries */}
-            <filter id="glow-soft" x="-20%" y="-20%" width="140%" height="140%">
+            {/* Ocean fill — radial gradient gives a subtle dome */}
+            <radialGradient id="globe-ocean" cx="38%" cy="34%" r="72%">
+              <stop offset="0%" stopColor="#1A1B23" />
+              <stop offset="55%" stopColor="#0E0E15" />
+              <stop offset="100%" stopColor="#04040A" />
+            </radialGradient>
+            {/* Atmospheric rim */}
+            <radialGradient id="globe-rim" cx="50%" cy="50%" r="50%">
+              <stop offset="92%" stopColor="rgba(0, 229, 255, 0)" />
+              <stop offset="98%" stopColor="rgba(0, 229, 255, 0.18)" />
+              <stop offset="100%" stopColor="rgba(0, 229, 255, 0)" />
+            </radialGradient>
+            <filter
+              id="glow-soft"
+              x="-20%"
+              y="-20%"
+              width="140%"
+              height="140%"
+            >
               <feGaussianBlur stdDeviation="2.4" result="blur" />
               <feMerge>
                 <feMergeNode in="blur" />
                 <feMergeNode in="SourceGraphic" />
               </feMerge>
             </filter>
-            {/* Background ocean — vast, recedes */}
-            <radialGradient id="ocean" cx="50%" cy="50%" r="75%">
-              <stop offset="0%" stopColor="#0E0E15" />
-              <stop offset="100%" stopColor="#06060A" />
-            </radialGradient>
           </defs>
 
-          <rect width="100%" height="100%" fill="url(#ocean)" />
+          {/* Globe atmosphere ring (sits behind the sphere) */}
+          <circle cx={500} cy={390} r={GLOBE_SCALE + 18} fill="url(#globe-rim)" />
 
-          <ZoomableGroup
-            center={center}
-            zoom={zoom}
-            minZoom={1}
-            maxZoom={6}
-            onMoveEnd={({ coordinates, zoom }) => {
-              // Sync interactive pan/drag state back so subsequent
-              // click-to-zoom animates from the user's actual position.
-              setCenter(coordinates);
-              setZoom(zoom);
-            }}
-            translateExtent={[
-              [-200, -200],
-              [1800, 980],
-            ]}
-          >
-            {topoData ? (
-              <>
-                <Geographies geography={topoData}>
-                  {({ geographies }) =>
-                    geographies.map((geo, i) => (
-                      <CountryShape
-                        key={geo.rsmKey}
-                        geography={geo}
-                        index={i}
-                      />
-                    ))
-                  }
-                </Geographies>
-                <AppMarkers />
-              </>
-            ) : null}
-          </ZoomableGroup>
+          {/* Ocean sphere */}
+          <Sphere
+            id="globe-sphere"
+            stroke="rgba(255,255,255,0.08)"
+            strokeWidth={0.8}
+            fill="url(#globe-ocean)"
+          />
+
+          {/* Graticule */}
+          <Graticule
+            stroke="rgba(255,255,255,0.045)"
+            strokeWidth={0.4}
+            step={[15, 15]}
+            fill="none"
+          />
+
+          {/* Countries */}
+          {topoData ? (
+            <>
+              <Geographies geography={topoData}>
+                {({ geographies }) =>
+                  geographies.map((geo, i) => (
+                    <CountryShape
+                      key={geo.rsmKey}
+                      geography={geo}
+                      index={i}
+                    />
+                  ))
+                }
+              </Geographies>
+              <CountryLabels />
+            </>
+          ) : null}
         </ComposableMap>
       </div>
 
       <MapTooltip />
-    </div>
-  );
-}
-
-function MapShimmer() {
-  return (
-    <div
-      className="absolute inset-0 flex items-center justify-center"
-      role="status"
-      aria-label="Loading world map"
-    >
-      <svg
-        viewBox="0 0 800 360"
-        className="w-3/4 max-w-4xl opacity-40"
-        aria-hidden="true"
-      >
-        <defs>
-          <linearGradient id="shimmer-grad" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="rgba(255,255,255,0.04)" />
-            <stop offset="50%" stopColor="rgba(255,255,255,0.10)" />
-            <stop offset="100%" stopColor="rgba(255,255,255,0.04)" />
-            <animate
-              attributeName="x1"
-              from="-100%"
-              to="100%"
-              dur="2.4s"
-              repeatCount="indefinite"
-            />
-            <animate
-              attributeName="x2"
-              from="0%"
-              to="200%"
-              dur="2.4s"
-              repeatCount="indefinite"
-            />
-          </linearGradient>
-        </defs>
-        {/* Stylized continents — generic blobs to suggest a map silhouette */}
-        <g fill="url(#shimmer-grad)">
-          <ellipse cx="180" cy="140" rx="120" ry="55" />
-          <ellipse cx="190" cy="240" rx="60" ry="50" />
-          <ellipse cx="380" cy="120" rx="100" ry="45" />
-          <ellipse cx="420" cy="220" rx="80" ry="60" />
-          <ellipse cx="580" cy="150" rx="130" ry="55" />
-          <ellipse cx="660" cy="270" rx="50" ry="35" />
-        </g>
-      </svg>
-      <div
-        className="absolute bottom-12 font-mono text-2xs uppercase tracking-widest text-bone-muted"
-      >
-        Loading atlas
-      </div>
     </div>
   );
 }
